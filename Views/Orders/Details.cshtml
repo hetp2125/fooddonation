@@ -1,0 +1,189 @@
+@model Order
+@{
+    ViewData["Title"] = $"Order #{Model.Id}";
+    bool isDonor = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.FoodListing?.DonorId;
+}
+
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0 opacity-75">
+                <li class="breadcrumb-item"><a asp-controller="Orders" asp-action="Index" class="text-white-50">Orders</a></li>
+                <li class="breadcrumb-item active text-white">Order #@Model.Id</li>
+            </ol>
+        </nav>
+        <h1 class="fw-bold mb-0"><i class="bi bi-bag-check me-2"></i>Order #@Model.Id</h1>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-7">
+            <!-- Status Timeline -->
+            <div class="card border-0 shadow-sm mb-4 p-4">
+                <h5 class="fw-bold mb-4"><i class="bi bi-list-check me-2 text-success"></i>Order Progress</h5>
+
+                @{
+                    var steps = new[] {
+                        (OrderStatus.Pending, "⏳", "Order Placed", "Your request has been submitted."),
+                        (OrderStatus.Confirmed, "✅", "Confirmed", "Donor has confirmed your order."),
+                        (OrderStatus.ReadyForPickup, "📦", "Ready for Pickup", "Food is ready! Head to the pickup location."),
+                        (OrderStatus.Completed, "🎉", "Completed", "Order successfully completed. Enjoy!")
+                    };
+                    int currentStep = Model.Status switch {
+                        OrderStatus.Pending => 0,
+                        OrderStatus.Confirmed => 1,
+                        OrderStatus.ReadyForPickup => 2,
+                        OrderStatus.Completed => 3,
+                        _ => -1
+                    };
+                }
+
+                @if (Model.Status == OrderStatus.Cancelled)
+                {
+                    <div class="alert alert-danger border-0">
+                        <strong>❌ Order Cancelled</strong><br />
+                        <small>This order has been cancelled. The quantity has been restored to the listing.</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @for (int i = 0; i < steps.Length; i++)
+                        {
+                            var (status, icon, title, desc) = steps[i];
+                            bool isDone = i <= currentStep;
+                            bool isCurrent = i == currentStep;
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width:44px;height:44px;background:@(isDone ? "#198754" : "#e9ecef");color:@(isDone ? "white" : "#adb5bd");font-size:1.2rem;">
+                                    @(isDone ? "✓" : icon)
+                                </div>
+                                <div class="@(!isDone ? "opacity-50" : "")">
+                                    <strong class="@(isCurrent ? "text-success" : "")">@title</strong>
+                                    @if (isCurrent) { <span class="badge bg-success ms-2">Current</span> }
+                                    <p class="text-muted small mb-0">@desc</p>
+                                </div>
+                            </div>
+                            @if (i < steps.Length - 1)
+                            {
+                                <div class="ms-5 border-start border-2 @(i < currentStep ? "border-success" : "border-secondary")" style="height:20px;margin-left:22px!important;"></div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Order Details -->
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-4"><i class="bi bi-info-circle me-2 text-info"></i>Order Details</h5>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Food Item</small>
+                        <strong>@Model.FoodListing?.FoodName</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Quantity</small>
+                        <strong>@Model.QuantityRequested @Model.FoodListing?.Unit</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Ordered By</small>
+                        <strong>@Model.User?.FullName</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Donated By</small>
+                        <strong>@Model.FoodListing?.Donor?.FullName</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Order Date</small>
+                        <strong>@Model.OrderedAt.ToString("MMMM dd, yyyy HH:mm")</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Last Updated</small>
+                        <strong>@Model.UpdatedAt.ToString("MMMM dd, yyyy HH:mm")</strong>
+                    </div>
+                    <div class="col-12">
+                        <small class="text-muted d-block">Pickup Location</small>
+                        <strong><i class="bi bi-geo-alt me-1 text-danger"></i>@Model.FoodListing?.Location</strong>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.PickupAddress))
+                    {
+                        <div class="col-12">
+                            <small class="text-muted d-block">Requester's Address</small>
+                            <strong>@Model.PickupAddress</strong>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="col-12">
+                            <small class="text-muted d-block">Notes</small>
+                            <p class="fst-italic mb-0">"@Model.Notes"</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Actions -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3">Actions</h6>
+
+                    @if (isDonor && Model.Status != OrderStatus.Completed && Model.Status != OrderStatus.Cancelled)
+                    {
+                        <div class="d-grid gap-2">
+                            @if (Model.Status == OrderStatus.Pending)
+                            {
+                                <form asp-action="UpdateStatus" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <input type="hidden" name="status" value="@OrderStatus.Confirmed" />
+                                    <button class="btn btn-success w-100 fw-bold">✅ Confirm Order</button>
+                                </form>
+                            }
+                            @if (Model.Status == OrderStatus.Confirmed)
+                            {
+                                <form asp-action="UpdateStatus" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <input type="hidden" name="status" value="@OrderStatus.ReadyForPickup" />
+                                    <button class="btn btn-primary w-100 fw-bold">📦 Mark Ready for Pickup</button>
+                                </form>
+                            }
+                            @if (Model.Status == OrderStatus.ReadyForPickup)
+                            {
+                                <form asp-action="UpdateStatus" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <input type="hidden" name="status" value="@OrderStatus.Completed" />
+                                    <button class="btn btn-info w-100 fw-bold">🎉 Mark Completed</button>
+                                </form>
+                            }
+                            <form asp-action="UpdateStatus" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                <input type="hidden" name="status" value="@OrderStatus.Cancelled" />
+                                <button class="btn btn-outline-danger w-100" data-confirm="Cancel this order?">✗ Cancel Order</button>
+                            </form>
+                        </div>
+                    }
+                    else if (!isDonor && Model.Status == OrderStatus.Pending)
+                    {
+                        <form asp-action="CancelOrder" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-outline-danger w-100" data-confirm="Cancel your order?">
+                                <i class="bi bi-x-circle me-2"></i>Cancel My Order
+                            </button>
+                        </form>
+                    }
+
+                    <a asp-action="Index" class="btn btn-outline-secondary w-100 mt-2">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

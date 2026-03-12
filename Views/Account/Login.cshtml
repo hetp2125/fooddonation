@@ -1,0 +1,64 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+<div class="min-vh-100 d-flex align-items-center" style="background: linear-gradient(135deg, #e8f5e9 0%, #f0faf4 100%);">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+                <div class="text-center mb-4">
+                    <span style="font-size: 3rem;">🥗</span>
+                    <h2 class="fw-bold mt-2">Welcome Back</h2>
+                    <p class="text-muted">Sign in to FoodShare</p>
+                </div>
+
+                <div class="card form-card p-4">
+                    <div class="alert alert-info border-0 mb-4">
+                        <small>
+                            <strong>Demo Accounts:</strong><br />
+                            Admin: admin@fooddonation.com / Admin@123456<br />
+                            User: user@fooddonation.com / User@123456
+                        </small>
+                    </div>
+
+                    <form asp-action="Login" method="post">
+                        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                        @Html.AntiForgeryToken()
+
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                            <input asp-for="Email" class="form-control" placeholder="you@example.com" autofocus />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label fw-semibold">Password</label>
+                            <input asp-for="Password" class="form-control" placeholder="••••••••" />
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input asp-for="RememberMe" class="form-check-input" />
+                                <label asp-for="RememberMe" class="form-check-label">Remember me</label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                        </button>
+                    </form>
+
+                    <hr class="my-4" />
+                    <p class="text-center text-muted mb-0">
+                        Don't have an account?
+                        <a asp-action="Register" class="text-success fw-semibold text-decoration-none">Sign up free</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

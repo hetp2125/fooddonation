@@ -1,0 +1,84 @@
+@using FoodDonationPlatform.Models @* Ensure this matches your actual namespace *@
+@model List<Order>
+
+@{
+    ViewData["Title"] = "Manage Orders";
+}
+
+<div class="page-header">
+    <div class="container">
+        <h1 class="fw-bold mb-1"><i class="bi bi-clipboard-check me-2"></i>Manage Incoming Orders</h1>
+        <p class="mb-0 opacity-75">Review and update order statuses for your food listings.</p>
+    </div>
+</div>
+
+<div class="container py-4">
+    @if (!Model.Any())
+    {
+        <div class="empty-state card border-0 shadow-sm">
+            <div class="empty-state-icon">📦</div>
+            <h5 class="mt-3 fw-bold">No orders yet</h5>
+            <p class="text-muted">No one has placed orders on your listings yet.</p>
+            <a asp-controller="FoodListings" asp-action="Index" class="btn btn-success">View My Listings</a>
+        </div>
+    }
+    else
+    {
+        var pending = Model.Where(o => o.Status == OrderStatus.Pending).ToList();
+        var confirmed = Model.Where(o => o.Status == OrderStatus.Confirmed).ToList();
+        var ready = Model.Where(o => o.Status == OrderStatus.ReadyForPickup).ToList();
+        var completed = Model.Where(o => o.Status == OrderStatus.Completed).ToList();
+        var cancelled = Model.Where(o => o.Status == OrderStatus.Cancelled).ToList();
+        
+        int pendingCount = pending.Count;
+        int confirmedCount = confirmed.Count;
+        int readyCount = ready.Count;
+        int completedCount = completed.Count;
+
+        <ul class="nav nav-tabs mb-4" id="orderTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#tab-all">
+                    All <span class="badge bg-secondary ms-1">@Model.Count</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab-pending">
+                    Pending <span class="badge bg-warning text-dark ms-1">@pendingCount</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab-confirmed">
+                    Confirmed <span class="badge bg-info text-dark ms-1">@confirmedCount</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab-ready">
+                    Ready <span class="badge bg-primary ms-1">@readyCount</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#tab-done">
+                    Completed <span class="badge bg-success ms-1">@completedCount</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="tab-all">
+                @await Html.PartialAsync("_OrderTable", Model)
+            </div>
+            <div class="tab-pane fade" id="tab-pending">
+                @await Html.PartialAsync("_OrderTable", pending)
+            </div>
+            <div class="tab-pane fade" id="tab-confirmed">
+                @await Html.PartialAsync("_OrderTable", confirmed)
+            </div>
+            <div class="tab-pane fade" id="tab-ready">
+                @await Html.PartialAsync("_OrderTable", ready)
+            </div>
+            <div class="tab-pane fade" id="tab-done">
+                @await Html.PartialAsync("_OrderTable", completed)
+            </div>
+        </div>
+    }
+</div>

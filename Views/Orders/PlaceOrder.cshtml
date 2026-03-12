@@ -1,0 +1,106 @@
+@model PlaceOrderViewModel
+@{
+    ViewData["Title"] = "Place Order";
+    var listing = Model.FoodListing!;
+}
+
+<div class="page-header">
+    <div class="container">
+        <h1 class="fw-bold mb-1"><i class="bi bi-cart-plus me-2"></i>Place an Order</h1>
+        <p class="mb-0 opacity-75">You're about to request: <strong>@listing.FoodName</strong></p>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row g-4 justify-content-center">
+        <!-- Order Form -->
+        <div class="col-lg-6">
+            <div class="card form-card p-4 p-md-5">
+                <h4 class="fw-bold mb-4"><i class="bi bi-bag-heart me-2 text-success"></i>Order Details</h4>
+
+                <form asp-action="PlaceOrder" method="post">
+                    @Html.AntiForgeryToken()
+                    <input asp-for="FoodListingId" type="hidden" />
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0"></div>
+
+                    <div class="mb-4 p-3 bg-light rounded-3">
+                        <h6 class="fw-bold">📦 @listing.FoodName</h6>
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <small class="text-muted">Available:</small>
+                                <span class="fw-bold d-block text-success">@listing.Quantity @listing.Unit</span>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Expires:</small>
+                                <span class="fw-bold d-block">@listing.ExpirationDate.ToString("MMM dd")</span>
+                            </div>
+                            <div class="col-12">
+                                <small class="text-muted">Pickup at:</small>
+                                <span class="d-block">@listing.Location</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="QuantityRequested" class="form-label fw-semibold">
+                            How many @listing.Unit do you need? <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input asp-for="QuantityRequested" id="quantity-input" class="form-control" type="number" min="1" max="@listing.Quantity" />
+                            <span class="input-group-text">@listing.Unit</span>
+                        </div>
+                        <input type="hidden" id="max-quantity" value="@listing.Quantity" />
+                        <small class="text-muted">Maximum: @listing.Quantity @listing.Unit</small>
+                        <span asp-validation-for="QuantityRequested" class="text-danger small d-block"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="PickupAddress" class="form-label fw-semibold">Your Address / Notes for Pickup</label>
+                        <input asp-for="PickupAddress" class="form-control" placeholder="Your address to coordinate pickup" />
+                        <span asp-validation-for="PickupAddress" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Notes" class="form-label fw-semibold">Additional Notes</label>
+                        <textarea asp-for="Notes" class="form-control" rows="2"
+                                  placeholder="Any dietary needs, preferred pickup time, etc."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-check-circle me-2"></i>Confirm Order
+                        </button>
+                        <a asp-controller="FoodListings" asp-action="Browse" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info sidebar -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm mb-3 bg-success text-white">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold"><i class="bi bi-info-circle me-2"></i>How Orders Work</h6>
+                    <ol class="ps-3 small mb-0 opacity-90">
+                        <li class="mb-2">You place an order with quantity needed.</li>
+                        <li class="mb-2">The donor reviews and confirms your request.</li>
+                        <li class="mb-2">You'll see "Ready for Pickup" status when food is ready.</li>
+                        <li>Pick up food at the listed location. Done! 🎉</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-warning"><i class="bi bi-exclamation-triangle me-2"></i>Important</h6>
+                    <p class="small text-muted mb-0">
+                        Please only order what you genuinely need.
+                        Cancellations should be done promptly so others can benefit from the donation.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

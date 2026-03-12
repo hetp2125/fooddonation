@@ -1,0 +1,265 @@
+@model FoodListingDetailViewModel
+@{
+    ViewData["Title"] = Model.Listing.FoodName;
+    var listing = Model.Listing;
+}
+
+<div class="page-header">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0 opacity-75">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-white-50">Dashboard</a></li>
+                <li class="breadcrumb-item"><a asp-action="@(User.IsInRole("Admin") ? "Index" : "Browse")" class="text-white-50">Food Listings</a></li>
+                <li class="breadcrumb-item active text-white">@listing.FoodName</li>
+            </ol>
+        </nav>
+        <h1 class="fw-bold mb-0">@listing.FoodName</h1>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row g-4">
+        <!-- Main Info -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="food-emoji-bg rounded-top" style="height:200px;font-size:6rem;">
+                    @GetCategoryEmoji(listing.Category)
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <span class="badge @GetStatusClass(listing.Status) fs-6">@listing.Status</span>
+                        @if (listing.Category != null)
+                        {
+                            <span class="category-chip fs-6">@listing.Category</span>
+                        }
+                        @if (listing.IsExpired)
+                        {
+                            <span class="badge bg-danger">Expired</span>
+                        }
+                        else if (listing.ExpirationDate < DateTime.UtcNow.AddDays(3))
+                        {
+                            <span class="badge bg-warning text-dark">Expires Soon</span>
+                        }
+                    </div>
+
+                    <p class="lead text-muted">@listing.Description</p>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                                <i class="bi bi-boxes text-success fs-4 me-3"></i>
+                                <div>
+                                    <small class="text-muted d-block">Available Quantity</small>
+                                    <strong class="fs-5">@listing.Quantity @listing.Unit</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                                <i class="bi bi-calendar-event text-info fs-4 me-3"></i>
+                                <div>
+                                    <small class="text-muted d-block">Expires On</small>
+                                    <strong class="@(listing.IsExpired ? "text-danger" : listing.ExpirationDate < DateTime.UtcNow.AddDays(3) ? "expiry-soon" : "expiry-ok")">
+                                        @listing.ExpirationDate.ToString("MMMM dd, yyyy")
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-12">
+                            <div class="d-flex align-items-start p-3 bg-light rounded-3">
+                                <i class="bi bi-geo-alt-fill text-danger fs-4 me-3 mt-1"></i>
+                                <div>
+                                    <small class="text-muted d-block">Pickup Location</small>
+                                    <strong>@listing.Location</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Donor Info -->
+                    <div class="mt-4 p-3 border rounded-3">
+                        <h6 class="fw-bold text-muted mb-2"><i class="bi bi-person-circle me-2"></i>Donated by</h6>
+                        <strong>@listing.Donor?.FullName</strong>
+                        @if (listing.Donor?.Address != null)
+                        {
+                            <br /><small class="text-muted">@listing.Donor.Address</small>
+                        }
+                        <br /><small class="text-muted">Posted @listing.CreatedAt.ToString("MMMM dd, yyyy")</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders on this listing (owner view) -->
+            @if (Model.IsOwner && listing.Orders.Any())
+            {
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 pt-4">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-bag-check me-2 text-success"></i>Orders (@listing.Orders.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @foreach (var order in listing.Orders.OrderByDescending(o => o.OrderedAt))
+                        {
+                            <div class="border rounded-3 p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>@order.User?.FullName</strong>
+                                        <br /><small class="text-muted">Quantity: @order.QuantityRequested @listing.Unit</small>
+                                        <br /><small class="text-muted">Ordered: @order.OrderedAt.ToString("MMM dd, yyyy HH:mm")</small>
+                                        @if (!string.IsNullOrEmpty(order.PickupAddress))
+                                        {
+                                            <br /><small class="text-muted"><i class="bi bi-geo-alt me-1"></i>@order.PickupAddress</small>
+                                        }
+                                        @if (!string.IsNullOrEmpty(order.Notes))
+                                        {
+                                            <br /><small class="text-info"><i class="bi bi-chat me-1"></i>@order.Notes</small>
+                                        }
+                                    </div>
+                                    <span class="badge @GetOrderStatusClass(order.Status)">@order.Status</span>
+                                </div>
+
+                                @if (order.Status != OrderStatus.Completed && order.Status != OrderStatus.Cancelled)
+                                {
+                                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                                        @if (order.Status == OrderStatus.Pending)
+                                        {
+                                            <form asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@order.Id" />
+                                                <input type="hidden" name="status" value="@OrderStatus.Confirmed" />
+                                                <button class="btn btn-sm btn-success">✓ Confirm</button>
+                                            </form>
+                                        }
+                                        @if (order.Status == OrderStatus.Confirmed)
+                                        {
+                                            <form asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@order.Id" />
+                                                <input type="hidden" name="status" value="@OrderStatus.ReadyForPickup" />
+                                                <button class="btn btn-sm btn-primary">📦 Ready for Pickup</button>
+                                            </form>
+                                        }
+                                        @if (order.Status == OrderStatus.ReadyForPickup)
+                                        {
+                                            <form asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@order.Id" />
+                                                <input type="hidden" name="status" value="@OrderStatus.Completed" />
+                                                <button class="btn btn-sm btn-info">✅ Mark Completed</button>
+                                            </form>
+                                        }
+                                        <form asp-controller="Orders" asp-action="UpdateStatus" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@order.Id" />
+                                            <input type="hidden" name="status" value="@OrderStatus.Cancelled" />
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    data-confirm="Cancel this order?">✗ Cancel</button>
+                                        </form>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar Actions -->
+        <div class="col-lg-4">
+            @if (Model.CanOrder)
+            {
+                <div class="card border-0 shadow-sm bg-success text-white mb-4">
+                    <div class="card-body p-4 text-center">
+                        <div style="font-size:3rem">🛒</div>
+                        <h5 class="fw-bold mt-2">This food is available!</h5>
+                        <p class="opacity-75 small">@listing.Quantity @listing.Unit remaining</p>
+                        <a asp-controller="Orders" asp-action="PlaceOrder" asp-route-foodListingId="@listing.Id"
+                           class="btn btn-warning btn-lg w-100 fw-bold">
+                            <i class="bi bi-cart-plus me-2"></i>Place Order
+                        </a>
+                    </div>
+                </div>
+            }
+
+            @if (Model.IsOwner)
+            {
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3"><i class="bi bi-gear me-2"></i>Manage This Listing</h6>
+                        <div class="d-grid gap-2">
+                            <a asp-action="Edit" asp-route-id="@listing.Id" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil me-2"></i>Edit Listing
+                            </a>
+
+                            @if (listing.Status != FoodListingStatus.Cancelled)
+                            {
+                                <form asp-action="UpdateStatus" asp-route-id="@listing.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="status" value="@(listing.Status == FoodListingStatus.Available ? FoodListingStatus.Cancelled : FoodListingStatus.Available)" />
+                                    <button type="submit" class="btn btn-outline-@(listing.Status == FoodListingStatus.Available ? "warning" : "success") w-100"
+                                            data-confirm="@(listing.Status == FoodListingStatus.Available ? "Mark listing as cancelled?" : "Reactivate this listing?")">
+                                        @(listing.Status == FoodListingStatus.Available
+                                            ? "⏸ Mark as Cancelled"
+                                            : "▶ Reactivate Listing")
+                                    </button>
+                                </form>
+                            }
+
+                            <form asp-action="Delete" asp-route-id="@listing.Id" method="post">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger w-100"
+                                        data-confirm="Permanently delete '@listing.FoodName'? This cannot be undone.">
+                                    <i class="bi bi-trash me-2"></i>Delete Listing
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Stats Card -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-info"></i>Listing Stats</h6>
+                    <div class="row text-center g-2">
+                        <div class="col-6">
+                            <div class="bg-light rounded-3 p-3">
+                                <div class="h4 fw-bold text-success mb-0">@listing.Orders.Count</div>
+                                <small class="text-muted">Total Orders</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light rounded-3 p-3">
+                                <div class="h4 fw-bold text-info mb-0">
+                                    @listing.Orders.Count(o => o.Status == OrderStatus.Completed)
+                                </div>
+                                <small class="text-muted">Completed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetCategoryEmoji(string? cat) => cat switch {
+        "Hot Meals" => "🍲", "Baked Goods" => "🍞", "Fresh Produce" => "🥦",
+        "Pantry Items" => "🥫", "Grains" => "🌾", "Dairy" => "🧀",
+        "Protein" => "🥩", "Beverages" => "🥤", _ => "🍱"
+    };
+    string GetStatusClass(FoodListingStatus s) => s switch {
+        FoodListingStatus.Available => "status-available",
+        FoodListingStatus.PartiallyReserved or FoodListingStatus.FullyReserved => "status-reserved",
+        FoodListingStatus.Completed => "status-completed",
+        FoodListingStatus.Expired or FoodListingStatus.Cancelled => "status-expired",
+        _ => "bg-secondary"
+    };
+    string GetOrderStatusClass(OrderStatus s) => s switch {
+        OrderStatus.Pending => "bg-warning text-dark",
+        OrderStatus.Confirmed => "bg-info text-dark",
+        OrderStatus.ReadyForPickup => "bg-primary",
+        OrderStatus.Completed => "bg-success",
+        _ => "bg-secondary"
+    };
+}

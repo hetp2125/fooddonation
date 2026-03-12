@@ -1,0 +1,202 @@
+@model AdminDashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="page-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col">
+                <h1 class="fw-bold mb-1"><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h1>
+                <p class="mb-0 opacity-75">Welcome back! Manage your food donations and orders.</p>
+            </div>
+            <div class="col-auto">
+                <a asp-controller="FoodListings" asp-action="Create" class="btn btn-warning fw-bold">
+                    <i class="bi bi-plus-circle me-2"></i>Post Food Donation
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+    <!-- Stats -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card shadow-sm p-4 border-start border-success border-4">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-success bg-opacity-10 text-success me-3">
+                        <i class="bi bi-list-ul"></i>
+                    </div>
+                    <div>
+                        <div class="h3 fw-bold mb-0 text-success">@Model.TotalListings</div>
+                        <small class="text-muted">Total Listings</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card shadow-sm p-4 border-start border-info border-4">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-info bg-opacity-10 text-info me-3">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div>
+                        <div class="h3 fw-bold mb-0 text-info">@Model.ActiveListings</div>
+                        <small class="text-muted">Active Listings</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card shadow-sm p-4 border-start border-warning border-4">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning me-3">
+                        <i class="bi bi-bag"></i>
+                    </div>
+                    <div>
+                        <div class="h3 fw-bold mb-0 text-warning">@Model.TotalOrders</div>
+                        <small class="text-muted">Total Orders</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card stat-card shadow-sm p-4 border-start border-danger border-4">
+                <div class="d-flex align-items-center">
+                    <div class="stat-icon bg-danger bg-opacity-10 text-danger me-3">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div>
+                        <div class="h3 fw-bold mb-0 text-danger">@Model.PendingOrders</div>
+                        <small class="text-muted">Pending Orders</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Listings -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-grid me-2 text-success"></i>My Recent Listings</h5>
+                    <a asp-controller="FoodListings" asp-action="Index" class="btn btn-sm btn-outline-success">View All</a>
+                </div>
+                <div class="card-body">
+                    @if (!Model.RecentListings.Any())
+                    {
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🍱</div>
+                            <h6 class="mt-3 text-muted">No listings yet</h6>
+                            <a asp-controller="FoodListings" asp-action="Create" class="btn btn-success btn-sm mt-2">Post First Donation</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Food Item</th>
+                                        <th>Qty</th>
+                                        <th>Expires</th>
+                                        <th>Status</th>
+                                        <th>Orders</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var listing in Model.RecentListings)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@listing.FoodName</strong>
+                                                @if (listing.Category != null)
+                                                {
+                                                    <br /><small class="category-chip">@listing.Category</small>
+                                                }
+                                            </td>
+                                            <td>@listing.Quantity <small class="text-muted">@listing.Unit</small></td>
+                                            <td>
+                                                <small class="@(listing.ExpirationDate < DateTime.UtcNow.AddDays(3) ? "expiry-soon" : "expiry-ok")">
+                                                    @listing.ExpirationDate.ToString("MMM dd")
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <span class="badge @GetStatusClass(listing.Status)">@listing.Status</span>
+                                            </td>
+                                            <td><span class="badge bg-secondary">@listing.Orders.Count</span></td>
+                                            <td>
+                                                <a asp-controller="FoodListings" asp-action="Edit" asp-route-id="@listing.Id" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-clipboard-check me-2 text-warning"></i>Incoming Orders</h5>
+                    <a asp-controller="Orders" asp-action="Index" class="btn btn-sm btn-outline-warning">View All</a>
+                </div>
+                <div class="card-body">
+                    @if (!Model.RecentOrders.Any())
+                    {
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📦</div>
+                            <p class="text-muted mt-2">No orders yet</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var order in Model.RecentOrders)
+                        {
+                            <div class="border rounded-3 p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong>@order.FoodListing?.FoodName</strong>
+                                        <br /><small class="text-muted">by @order.User?.FullName</small>
+                                        <br /><small class="text-muted">Qty: @order.QuantityRequested</small>
+                                    </div>
+                                    <span class="badge @GetOrderStatusClass(order.Status)">@order.Status</span>
+                                </div>
+                                <div class="d-flex gap-2 mt-2">
+                                    <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-sm btn-outline-secondary">Details</a>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusClass(FoodListingStatus s) => s switch {
+        FoodListingStatus.Available => "status-available",
+        FoodListingStatus.PartiallyReserved or FoodListingStatus.FullyReserved => "status-reserved",
+        FoodListingStatus.Completed => "status-completed",
+        FoodListingStatus.Expired or FoodListingStatus.Cancelled => "status-expired",
+        _ => "bg-secondary"
+    };
+    string GetOrderStatusClass(OrderStatus s) => s switch {
+        OrderStatus.Pending => "bg-warning text-dark",
+        OrderStatus.Confirmed => "bg-info text-dark",
+        OrderStatus.ReadyForPickup => "bg-primary",
+        OrderStatus.Completed => "bg-success",
+        OrderStatus.Cancelled => "bg-secondary",
+        _ => "bg-secondary"
+    };
+}

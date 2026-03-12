@@ -1,0 +1,122 @@
+@model FoodListingViewModel
+@{
+    var isEdit = Model.Id > 0;
+    ViewData["Title"] = isEdit ? "Edit Listing" : "Post Food Donation";
+}
+
+<div class="page-header">
+    <div class="container">
+        <h1 class="fw-bold mb-1">
+            <i class="bi bi-@(isEdit ? "pencil-square" : "plus-circle") me-2"></i>
+            @(isEdit ? "Edit Food Listing" : "Post a Food Donation")
+        </h1>
+        <p class="mb-0 opacity-75">@(isEdit ? "Update your listing details." : "Share surplus food with your community.")</p>
+    </div>
+</div>
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card form-card p-4 p-md-5">
+                <form asp-action="@(isEdit ? "Edit" : "Create")" method="post">
+                    @Html.AntiForgeryToken()
+                    @if (isEdit) { <input asp-for="Id" type="hidden" /> }
+
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger border-0"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="FoodName" class="form-label fw-semibold">Food Name <span class="text-danger">*</span></label>
+                        <input asp-for="FoodName" class="form-control" placeholder="e.g., Vegetable Soup, Whole Wheat Bread" />
+                        <span asp-validation-for="FoodName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Description" class="form-label fw-semibold">Description <span class="text-danger">*</span></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"
+                                  placeholder="Describe the food: ingredients, preparation, dietary info, etc."></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="Quantity" class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+                            <input asp-for="Quantity" class="form-control" type="number" min="1" placeholder="e.g., 10" />
+                            <span asp-validation-for="Quantity" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Unit" class="form-label fw-semibold">Unit</label>
+                            <select asp-for="Unit" class="form-select">
+                                <option>servings</option>
+                                <option>pieces</option>
+                                <option>lbs</option>
+                                <option>kg</option>
+                                <option>loaves</option>
+                                <option>cans</option>
+                                <option>boxes</option>
+                                <option>kits</option>
+                                <option>bags</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label asp-for="ExpirationDate" class="form-label fw-semibold">Expiration Date <span class="text-danger">*</span></label>
+                            <input asp-for="ExpirationDate" class="form-control" type="date"
+                                   value="@Model.ExpirationDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="ExpirationDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Category" class="form-label fw-semibold">Category</label>
+                            <select asp-for="Category" class="form-select">
+                                <option value="">Select category...</option>
+                                <option>Hot Meals</option>
+                                <option>Baked Goods</option>
+                                <option>Fresh Produce</option>
+                                <option>Pantry Items</option>
+                                <option>Grains</option>
+                                <option>Dairy</option>
+                                <option>Protein</option>
+                                <option>Beverages</option>
+                                <option>Snacks</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Location" class="form-label fw-semibold">Pickup Location <span class="text-danger">*</span></label>
+                        <input asp-for="Location" class="form-control" placeholder="e.g., Community Kitchen, 123 Main St, City" />
+                        <span asp-validation-for="Location" class="text-danger small"></span>
+                        <small class="text-muted">Provide a specific address or meeting point for pickup.</small>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-success fw-bold px-4">
+                            <i class="bi bi-check-circle me-2"></i>@(isEdit ? "Save Changes" : "Post Donation")
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="card border-0 bg-success bg-opacity-10 p-4 mb-3">
+                <h6 class="fw-bold text-success"><i class="bi bi-lightbulb me-2"></i>Tips for Donors</h6>
+                <ul class="small text-muted ps-3 mb-0">
+                    <li class="mb-2">Be specific about what the food is and any allergens.</li>
+                    <li class="mb-2">Set accurate expiration dates to avoid food safety issues.</li>
+                    <li class="mb-2">Provide a clear, accessible pickup location.</li>
+                    <li>Update your listing if the quantity changes.</li>
+                </ul>
+            </div>
+            <div class="card border-0 bg-warning bg-opacity-10 p-4">
+                <h6 class="fw-bold text-warning"><i class="bi bi-shield-check me-2"></i>Safety First</h6>
+                <p class="small text-muted mb-0">
+                    Ensure food is properly stored, labelled, and safe for consumption. Never donate expired or unsafe food.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
